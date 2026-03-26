@@ -1,0 +1,12 @@
+﻿<UserControl x:Class="wpf_projekt.Views.SummaryView"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <StackPanel Margin="20">
+
+        <TextBlock Name="BalanceText" FontSize="30" FontWeight="Bold"/>
+        <TextBlock Name="IncomeText" FontSize="20"/>
+        <TextBlock Name="ExpenseText" FontSize="20"/>
+
+    </StackPanel>
+</UserControl>

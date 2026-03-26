@@ -80,6 +80,7 @@ namespace wpf_projekt
             AmountTextBox.Clear();
             DescriptionTextBox.Clear();
             TransactionDatePicker.SelectedDate = DateTime.Now;
+            Transactions = new List<Transaction>(Transactions);
         }
     }
 }
