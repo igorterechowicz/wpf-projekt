@@ -1,82 +1,158 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
+using wpf_projekt.models;
 using wpf_projekt.Models;
 
 namespace wpf_projekt
 {
     public partial class MainWindow : Window
     {
-        public static List<Transaction> Transactions { get; set; } = new List<Transaction>();
+        private readonly AppDbContext _context = new AppDbContext();
 
-        // Dwie oddzielne listy dla lepszej logiki!
-        private readonly List<string> ExpenseCategories = new List<string> { "Jedzenie", "Transport", "Rachunki", "Rozrywka", "Zdrowie", "Inne" };
-        private readonly List<string> IncomeCategories = new List<string> { "Wynagrodzenie", "Premia", "Zwrot", "Prezent", "Inne" };
+        // Kolekcje powiązane z UI
+        public ObservableCollection<Transaction> Transactions { get; set; } = new ObservableCollection<Transaction>();
+        public ObservableCollection<PersonalAccount> PersonalAccounts { get; set; } = new ObservableCollection<PersonalAccount>();
+        public ObservableCollection<TransactionType> Categories { get; set; } = new ObservableCollection<TransactionType>();
 
         public MainWindow()
         {
             InitializeComponent();
+            DataContext = this; // Pozwala na Binding w XAML
+
+            InitializeDatabase();
+        }
+
+        private async void InitializeDatabase()
+        {
+            // Tworzy bazę danych, jeśli nie istnieje
+            await _context.Database.EnsureCreatedAsync();
+
+            // Uruchamia Seed danych
+            await SeedInitialDataAsync();
+
+            // Ładuje dane do UI
+            await LoadDataFromDatabaseAsync();
 
             TransactionDatePicker.SelectedDate = DateTime.Now;
-            UpdateCategories(); // Wczytuje kategorie przy starcie (domyślnie wydatki)
         }
 
-        // Metoda wywoływana automatycznie, gdy klikniesz "Przychód" lub "Wydatek"
-        private void TransactionType_Changed(object sender, RoutedEventArgs e)
+        private async Task SeedInitialDataAsync()
         {
-            // Warunek zapobiega błędowi, zanim okno do końca się załaduje
-            if (CategoryComboBox != null)
+            // Jeśli mamy już jakichś użytkowników, nie dodajemy danych testowych
+            if (await _context.Users.AnyAsync()) return;
+
+            // 1. Dodaj typy transakcji
+            var types = new[]
             {
-                UpdateCategories();
-            }
+                new TransactionType { Name = "Jedzenie" },
+                new TransactionType { Name = "Transport" },
+                new TransactionType { Name = "Wypłata" },
+                new TransactionType { Name = "Rozrywka" }
+            };
+            _context.TransactionTypes.AddRange(types);
+
+            // 2. Dodaj użytkownika i konto
+            var testUser = new User { FirstName = "Jan", LastName = "Kowalski", Earnings = 5000 };
+            _context.Users.Add(testUser);
+            await _context.SaveChangesAsync(); // Zapisujemy, by dostać ID użytkownika
+
+            var personalAcc = new PersonalAccount { Balance = 2500, UserId = testUser.Id };
+            _context.PersonalAccounts.Add(personalAcc);
+
+            await _context.SaveChangesAsync();
         }
 
-        // Logika podmieniania kategorii
-        private void UpdateCategories()
+        private async Task LoadDataFromDatabaseAsync()
         {
-            CategoryComboBox.Items.Clear(); // Czyści starą listę
+            // Czyścimy kolekcje lokalne
+            Categories.Clear();
+            PersonalAccounts.Clear();
+            Transactions.Clear();
 
-            if (ExpenseRadio.IsChecked == true)
-            {
-                foreach (var cat in ExpenseCategories) CategoryComboBox.Items.Add(cat);
-            }
-            else if (IncomeRadio.IsChecked == true)
-            {
-                foreach (var cat in IncomeCategories) CategoryComboBox.Items.Add(cat);
-            }
+            // Pobieramy dane z bazy (Include ładuje relacje)
+            var dbCategories = await _context.TransactionTypes.ToListAsync();
+            var dbAccounts = await _context.PersonalAccounts.ToListAsync();
+            var dbTransactions = await _context.Transactions
+                .Include(t => t.TransactionType)
+                .Include(t => t.PersonalAccount)
+                .OrderByDescending(t => t.Date)
+                .ToListAsync();
 
-            // Automatycznie zaznacza pierwszą pozycję z nowej listy
-            if (CategoryComboBox.Items.Count > 0)
-                CategoryComboBox.SelectedIndex = 0;
+            // Przypisujemy do ObservableCollection
+            dbCategories.ForEach(Categories.Add);
+            dbAccounts.ForEach(PersonalAccounts.Add);
+            dbTransactions.ForEach(Transactions.Add);
+
+            // Ustawienie ComboBoxów
+            CategoryComboBox.ItemsSource = Categories;
+            AccountComboBox.ItemsSource = PersonalAccounts;
+
+            // Wyświetlanie formatu w ComboBox (jeśli nie ustawiono w XAML)
+            CategoryComboBox.DisplayMemberPath = "Name";
         }
 
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            // Walidacja: czy wpisano kwotę i czy jest większa od 0
-            if (!decimal.TryParse(AmountTextBox.Text, out decimal parsedAmount) || parsedAmount <= 0)
+            // 1. Walidacja
+            if (!decimal.TryParse(AmountTextBox.Text, out decimal amount))
             {
-                MessageBox.Show("Wprowadź poprawną kwotę większą od zera (np. 150,50).", "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Wprowadź poprawną kwotę.");
+                return;
+            }
+
+            var selectedType = CategoryComboBox.SelectedItem as TransactionType;
+            var selectedAccount = AccountComboBox.SelectedItem as PersonalAccount;
+
+            if (selectedType == null || selectedAccount == null)
+            {
+                MessageBox.Show("Wybierz kategorię i konto!");
                 return;
             }
 
             bool isIncome = IncomeRadio.IsChecked == true;
 
-            Transaction newTransaction = new Transaction
+            // 2. Tworzenie obiektu
+            var newTransaction = new Transaction
             {
-                Id = Transactions.Count + 1,
-                Amount = parsedAmount,
+                Amount = amount,
+                IsPositive = isIncome,
                 Date = TransactionDatePicker.SelectedDate ?? DateTime.Now,
                 Description = DescriptionTextBox.Text,
-                Category = CategoryComboBox.SelectedItem?.ToString() ?? "Inne",
-                IsPositive = isIncome
+                TransactionTypeId = selectedType.Id,
+                PersonalAccountId = selectedAccount.Id
             };
 
-            Transactions.Add(newTransaction);
+            try
+            {
+                // 3. Logika biznesowa: Aktualizacja salda w bazie
+                if (isIncome)
+                    selectedAccount.Balance += amount;
+                else
+                    selectedAccount.Balance -= amount;
 
-            MessageBox.Show($"Dodano pomyślnie!\n\nTyp: {newTransaction.TypeName}\nKategoria: {newTransaction.Category}\nKwota: {newTransaction.Amount} zł\nOpis: {newTransaction.Description}",
-                            "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
+                // 4. Zapis do bazy
+                _context.Transactions.Add(newTransaction);
+                _context.PersonalAccounts.Update(selectedAccount);
+                await _context.SaveChangesAsync();
 
-            // Wyczyszczenie formularza na następny raz
+                // 5. Aktualizacja UI (dodajemy na początek listy)
+                Transactions.Insert(0, newTransaction);
+
+                MessageBox.Show($"Zapisano! Aktualne saldo: {selectedAccount.Balance}");
+                ClearForm();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Błąd zapisu: {ex.Message}");
+            }
+        }
+
+        private void ClearForm()
+        {
             AmountTextBox.Clear();
             DescriptionTextBox.Clear();
             TransactionDatePicker.SelectedDate = DateTime.Now;
