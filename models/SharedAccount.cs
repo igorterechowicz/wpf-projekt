@@ -10,7 +10,7 @@ namespace wpf_projekt.models
     public class SharedAccount : ObservableModel
     {
         public int Id { get; set; }
-        public int Balance { get; set; }
+        public decimal Balance { get; set; }
         [Required]
         public int User1Id { get; set; }
         [Required]

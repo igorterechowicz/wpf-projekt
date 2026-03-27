@@ -1,7 +1,8 @@
-﻿using SQLitePCL;
+﻿using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using wpf_projekt.models;
 using wpf_projekt.Models;
@@ -10,99 +11,151 @@ namespace wpf_projekt
 {
     public partial class MainWindow : Window
     {
-        private AppDbContext _context = new AppDbContext();
-        // Listy udostępnione dla reszty zespołu
-        public static List<Transaction> Transactions { get; set; } = new List<Transaction>();
-        public static List<PersonalAccount> PersonalAccounts { get; set; } = new List<PersonalAccount>();
-        public static List<SharedAccount> SharedAccounts { get; set; } = new List<SharedAccount>();
+        private readonly AppDbContext _context = new AppDbContext();
+
+        // Kolekcje powiązane z UI
+        public ObservableCollection<Transaction> Transactions { get; set; } = new ObservableCollection<Transaction>();
+        public ObservableCollection<PersonalAccount> PersonalAccounts { get; set; } = new ObservableCollection<PersonalAccount>();
+        public ObservableCollection<TransactionType> Categories { get; set; } = new ObservableCollection<TransactionType>();
 
         public MainWindow()
         {
             InitializeComponent();
+            DataContext = this; // Pozwala na Binding w XAML
 
-            // Symulacja danych początkowych (normalnie byłyby z bazy/pliku)
-            SeedInitialData();
+            InitializeDatabase();
+        }
 
-            LoadDefaultCategories();
-            LoadAccountsToUI();
+        private async void InitializeDatabase()
+        {
+            // Tworzy bazę danych, jeśli nie istnieje
+            await _context.Database.EnsureCreatedAsync();
+
+            // Uruchamia Seed danych
+            await SeedInitialDataAsync();
+
+            // Ładuje dane do UI
+            await LoadDataFromDatabaseAsync();
 
             TransactionDatePicker.SelectedDate = DateTime.Now;
         }
 
-        private void SeedInitialData()
+        private async Task SeedInitialDataAsync()
         {
-            // Przykładowe konto, żeby było do czego przypisać transakcję
-            PersonalAccounts.Add(new PersonalAccount { Id = 1, Balance = 1000, UserId = 1 });
-        }
+            // Jeśli mamy już jakichś użytkowników, nie dodajemy danych testowych
+            if (await _context.Users.AnyAsync()) return;
 
-        private void LoadAccountsToUI()
-        {
-            foreach (var acc in PersonalAccounts)
-                AccountComboBox.Items.Add($"Osobiste #{acc.Id}");
-        }
-
-        private void LoadDefaultCategories()
-        {
-            // Teraz to są obiekty TransactionType zgodnie z diagramem
-            CategoryComboBox.Items.Add(new TransactionType { Id = 1, Name = "Jedzenie" });
-            CategoryComboBox.Items.Add(new TransactionType { Id = 2, Name = "Transport" });
-            CategoryComboBox.Items.Add(new TransactionType { Id = 3, Name = "Rachunki" });
-
-            CategoryComboBox.DisplayMemberPath = "Name"; // Wyświetlaj tylko nazwę w UI
-            CategoryComboBox.SelectedIndex = 0;
-        }
-
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
-        {
-            // 1. Walidacja kwoty
-            if (!decimal.TryParse(AmountTextBox.Text, out decimal parsedAmount))
+            // 1. Dodaj typy transakcji
+            var types = new[]
             {
-                MessageBox.Show("Wprowadź poprawną kwotę.", "Błąd");
+                new TransactionType { Name = "Jedzenie" },
+                new TransactionType { Name = "Transport" },
+                new TransactionType { Name = "Wypłata" },
+                new TransactionType { Name = "Rozrywka" }
+            };
+            _context.TransactionTypes.AddRange(types);
+
+            // 2. Dodaj użytkownika i konto
+            var testUser = new User { FirstName = "Jan", LastName = "Kowalski", Earnings = 5000 };
+            _context.Users.Add(testUser);
+            await _context.SaveChangesAsync(); // Zapisujemy, by dostać ID użytkownika
+
+            var personalAcc = new PersonalAccount { Balance = 2500, UserId = testUser.Id };
+            _context.PersonalAccounts.Add(personalAcc);
+
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task LoadDataFromDatabaseAsync()
+        {
+            // Czyścimy kolekcje lokalne
+            Categories.Clear();
+            PersonalAccounts.Clear();
+            Transactions.Clear();
+
+            // Pobieramy dane z bazy (Include ładuje relacje)
+            var dbCategories = await _context.TransactionTypes.ToListAsync();
+            var dbAccounts = await _context.PersonalAccounts.ToListAsync();
+            var dbTransactions = await _context.Transactions
+                .Include(t => t.TransactionType)
+                .Include(t => t.PersonalAccount)
+                .OrderByDescending(t => t.Date)
+                .ToListAsync();
+
+            // Przypisujemy do ObservableCollection
+            dbCategories.ForEach(Categories.Add);
+            dbAccounts.ForEach(PersonalAccounts.Add);
+            dbTransactions.ForEach(Transactions.Add);
+
+            // Ustawienie ComboBoxów
+            CategoryComboBox.ItemsSource = Categories;
+            AccountComboBox.ItemsSource = PersonalAccounts;
+
+            // Wyświetlanie formatu w ComboBox (jeśli nie ustawiono w XAML)
+            CategoryComboBox.DisplayMemberPath = "Name";
+        }
+
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            // 1. Walidacja
+            if (!decimal.TryParse(AmountTextBox.Text, out decimal amount))
+            {
+                MessageBox.Show("Wprowadź poprawną kwotę.");
                 return;
             }
 
-            // 2. Pobranie wybranego typu i konta
             var selectedType = CategoryComboBox.SelectedItem as TransactionType;
+            var selectedAccount = AccountComboBox.SelectedItem as PersonalAccount;
+
+            if (selectedType == null || selectedAccount == null)
+            {
+                MessageBox.Show("Wybierz kategorię i konto!");
+                return;
+            }
+
             bool isIncome = IncomeRadio.IsChecked == true;
 
-            // 3. Stworzenie transakcji z relacjami
-            Transaction newTransaction = new Transaction
+            // 2. Tworzenie obiektu
+            var newTransaction = new Transaction
             {
-                Id = Transactions.Count + 1,
-                Amount = parsedAmount,
+                Amount = amount,
                 IsPositive = isIncome,
                 Date = TransactionDatePicker.SelectedDate ?? DateTime.Now,
                 Description = DescriptionTextBox.Text,
-
-                // Przypisanie kluczy obcych i obiektów nawigacyjnych
-                TransactionTypeId = selectedType?.Id ?? 1,
-                TransactionType = selectedType,
-
-                // Przypisujemy do konta osobistego (uproszczenie dla przykładu)
-                PersonalAccountId = PersonalAccounts.FirstOrDefault()?.Id,
-                PersonalAccount = PersonalAccounts.FirstOrDefault()
+                TransactionTypeId = selectedType.Id,
+                PersonalAccountId = selectedAccount.Id
             };
-            _context.Transactions.Add(newTransaction);
-            _context.SaveChanges();
-            MessageBox.Show("Zapisano w bazie SQLite!");
 
-            // 4. Logika biznesowa: Aktualizacja salda konta!
-            if (newTransaction.PersonalAccount != null)
+            try
             {
+                // 3. Logika biznesowa: Aktualizacja salda w bazie
                 if (isIncome)
-                    newTransaction.PersonalAccount.Balance += (int)parsedAmount; // rzutowanie na int wg diagramu
+                    selectedAccount.Balance += (int)amount;
                 else
-                    newTransaction.PersonalAccount.Balance -= (int)parsedAmount;
+                    selectedAccount.Balance -= (int)amount;
+
+                // 4. Zapis do bazy
+                _context.Transactions.Add(newTransaction);
+                _context.PersonalAccounts.Update(selectedAccount);
+                await _context.SaveChangesAsync();
+
+                // 5. Aktualizacja UI (dodajemy na początek listy)
+                Transactions.Insert(0, newTransaction);
+
+                MessageBox.Show($"Zapisano! Aktualne saldo: {selectedAccount.Balance}");
+                ClearForm();
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Błąd zapisu: {ex.Message}");
+            }
+        }
 
-            // 5. Zapis do listy
-            Transactions.Add(newTransaction);
-
-            MessageBox.Show($"Zapisano! Nowe saldo konta: {newTransaction.PersonalAccount?.Balance}");
-
-            // Czyszczenie
+        private void ClearForm()
+        {
             AmountTextBox.Clear();
             DescriptionTextBox.Clear();
+            TransactionDatePicker.SelectedDate = DateTime.Now;
         }
     }
 }
