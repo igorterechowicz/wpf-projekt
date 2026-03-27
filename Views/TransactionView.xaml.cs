@@ -23,8 +23,10 @@ namespace wpf_projekt.Views
             CategoryFilterComboBox.Items.Clear();
             CategoryFilterComboBox.Items.Add("Wszystkie");
 
-            var categories = MainWindow.Transactions
-                .Select(t => t.Category)
+            var transactions = ((MainWindow)Application.Current.MainWindow).Transactions;
+
+            var categories = transactions
+                .Select(t => t.TransactionType.Name)
                 .Distinct()
                 .OrderBy(c => c)
                 .ToList();
@@ -50,13 +52,13 @@ namespace wpf_projekt.Views
 
         private void Apply()
         {
-            var data = MainWindow.Transactions.AsEnumerable();
+            var data = ((MainWindow)Application.Current.MainWindow).Transactions.AsEnumerable();
 
             // 🔹 FILTR KATEGORII
             var selectedCategory = CategoryFilterComboBox.SelectedItem?.ToString();
             if (!string.IsNullOrEmpty(selectedCategory) && selectedCategory != "Wszystkie")
             {
-                data = data.Where(t => t.Category == selectedCategory);
+                data = data.Where(t => t.TransactionType.Name == selectedCategory);
             }
 
             // 🔹 FILTR RODZAJU (wydatek/przychód)

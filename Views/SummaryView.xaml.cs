@@ -14,7 +14,7 @@ namespace wpf_projekt.Views
 
         private void Load()
         {
-            var t = MainWindow.Transactions;
+            var t = ((MainWindow)Application.Current.MainWindow).Transactions;
 
             var income = t.Where(x => x.IsPositive).Sum(x => x.Amount);
             var expense = t.Where(x => !x.IsPositive).Sum(x => x.Amount);
