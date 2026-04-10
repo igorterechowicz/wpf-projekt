@@ -11,7 +11,7 @@ namespace wpf_projekt.models
         public int Id { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
-        public int Earnings { get; set; }
+        public decimal Earnings { get; set; }
         public int? SharedAccountId { get; set; }
 
         public virtual ICollection<PersonalAccount> PersonalAccounts { get; set; }

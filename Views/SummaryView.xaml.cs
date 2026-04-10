@@ -28,5 +28,4 @@ namespace wpf_projekt.Views
             Load();
         }
     }
-
 }
