@@ -48,9 +48,15 @@
                         <TextBox x:Name="DescriptionTextBox" Margin="0,0,0,10"/>
 
                         <TextBlock Text="Kategoria:"/>
-                        <ComboBox x:Name="CategoryComboBox"
-                                  DisplayMemberPath="Name"
-                                  Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+
+                            <ComboBox x:Name="CategoryComboBox" 
+              DisplayMemberPath="Name" 
+              Width="200" />
+
+                            <Button Content="+" Width="30" Margin="10,0,0,0" Click="AddCategoryButton_Click" ToolTip="Dodaj własną kategorię" Cursor="Hand"/>
+
+                        </StackPanel>
 
                         <TextBlock Text="Typ transakcji:"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">

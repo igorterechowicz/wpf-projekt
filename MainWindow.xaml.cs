@@ -157,5 +157,21 @@ namespace wpf_projekt
             DescriptionTextBox.Clear();
             TransactionDatePicker.SelectedDate = DateTime.Now;
         }
+
+        private async void AddCategoryButton_Click(object sender, RoutedEventArgs e)
+        {
+            // 1. Otwieramy okno z Twojego folderu Views
+            var addCategoryWindow = new wpf_projekt.Views.AddCategoryWindow();
+            addCategoryWindow.Owner = this; // Środkuje okienko na głównym oknie
+
+            // 2. Czekamy na zamknięcie okienka
+            if (addCategoryWindow.ShowDialog() == true)
+            {
+                // 3. Jeśli użytkownik kliknął "Zapisz", odświeżamy kolekcję używając TWOJEJ metody!
+                // To automatycznie zaktualizuje CategoryComboBox dzięki ObservableCollection
+                await LoadDataFromDatabaseAsync();
+            }
+        }
+
     }
 }
