@@ -1,59 +1,60 @@
 ﻿<UserControl x:Class="wpf_projekt.Views.TransactionsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="500" d:DesignWidth="900">
 
     <StackPanel Margin="10">
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
 
-        <!-- FILTRY -->
-        <StackPanel Orientation="Horizontal" Margin="0 0 0 10">
-
-            <!-- DATA / SORTOWANIE -->
-            <StackPanel Margin="0,0,20,0">
-                <TextBlock Text="Data" FontWeight="Bold"/>
-                <ComboBox Name="DateSortComboBox"
-                          Width="150"
-                          SelectionChanged="FilterChanged">
-                    <ComboBoxItem Content="Od najnowszej"/>
-                    <ComboBoxItem Content="Od najstarszej"/>
-                </ComboBox>
+            <StackPanel Margin="0,0,10,0">
+                <TextBlock Text="Rok" FontWeight="Bold"/>
+                <ComboBox x:Name="YearFilterComboBox" Width="80" SelectionChanged="FilterChanged"/>
             </StackPanel>
 
-            <!-- KATEGORIA -->
-            <StackPanel Margin="0,0,20,0">
+            <StackPanel Margin="0,0,10,0">
+                <TextBlock Text="Miesiąc" FontWeight="Bold"/>
+                <ComboBox x:Name="MonthFilterComboBox" Width="100" SelectionChanged="FilterChanged"/>
+            </StackPanel>
+
+            <StackPanel Margin="0,0,10,0">
                 <TextBlock Text="Kategoria" FontWeight="Bold"/>
-                <ComboBox Name="CategoryFilterComboBox"
-                          Width="150"
-                          SelectionChanged="FilterChanged"/>
+                <ComboBox x:Name="CategoryFilterComboBox" Width="130" SelectionChanged="FilterChanged"/>
             </StackPanel>
 
-            <!-- RODZAJ / TYP -->
-            <StackPanel>
+            <StackPanel Margin="0,0,10,0">
                 <TextBlock Text="Rodzaj" FontWeight="Bold"/>
-                <ComboBox Name="TypeFilterComboBox"
-                          Width="150"
-                          SelectionChanged="FilterChanged">
+                <ComboBox x:Name="TypeFilterComboBox" Width="100" SelectionChanged="FilterChanged">
                     <ComboBoxItem Content="Wszystkie"/>
                     <ComboBoxItem Content="Wydatek"/>
                     <ComboBoxItem Content="Przychód"/>
                 </ComboBox>
             </StackPanel>
 
+            <StackPanel>
+                <TextBlock Text="Data" FontWeight="Bold"/>
+                <ComboBox x:Name="DateSortComboBox" Width="120" SelectionChanged="FilterChanged">
+                    <ComboBoxItem Content="Od najnowszej"/>
+                    <ComboBoxItem Content="Od najstarszej"/>
+                </ComboBox>
+            </StackPanel>
+
         </StackPanel>
 
-        <!-- TABELA -->
-        <DataGrid Name="TransactionsGrid"
-                  AutoGenerateColumns="False"
-                  IsReadOnly="True"
-                  Height="400">
+        <DataGrid x:Name="TransactionsGrid" 
+                  AutoGenerateColumns="False" 
+                  IsReadOnly="True" 
+                  Height="400"
+                  VerticalScrollBarVisibility="Auto">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Data" Binding="{Binding Date}" />
-                <DataGridTextColumn Header="Kategoria" Binding="{Binding Category}" />
-                <DataGridTextColumn Header="Kwota" Binding="{Binding Amount}" />
-                <DataGridTextColumn Header="Typ" Binding="{Binding TypeName}" />
-                <DataGridTextColumn Header="Opis" Binding="{Binding Description}" />
+                <DataGridTextColumn Header="Data" Binding="{Binding Date, StringFormat={}{0:dd.MM.yyyy}}" Width="100" />
+                <DataGridTextColumn Header="Kategoria" Binding="{Binding TransactionType.Name}" Width="150" />
+                <DataGridTextColumn Header="Kwota" Binding="{Binding Amount}" Width="80" />
+                <DataGridTextColumn Header="Typ" Binding="{Binding TypeName}" Width="80" />
+                <DataGridTextColumn Header="Opis" Binding="{Binding Description}" Width="*" />
             </DataGrid.Columns>
         </DataGrid>
-
     </StackPanel>
-
 </UserControl>
