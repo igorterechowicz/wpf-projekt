@@ -9,6 +9,7 @@ namespace wpf_projekt.models
     public class PersonalAccount : ObservableModel
     {
         public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
         public decimal _balance;
         public decimal Balance
         {

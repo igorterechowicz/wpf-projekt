@@ -43,6 +43,8 @@ namespace wpf_projekt.Models
         [ForeignKey("TransactionTypeId")]
         public virtual TransactionType TransactionType { get; set; }
 
+        public Guid? TransferGroupId { get; set; }
+
         // Właściwość pomocnicza
         [NotMapped] // Nie twórz kolumny w bazie dla tej właściwości obliczeniowej
         public string TypeName => IsPositive ? "Przychód" : "Wydatek";
