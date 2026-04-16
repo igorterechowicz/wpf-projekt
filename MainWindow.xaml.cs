@@ -171,8 +171,16 @@ namespace wpf_projekt
             // 1. Walidacja
             if (!decimal.TryParse(AmountTextBox.Text, out decimal amount))
             {
+                AmountTextBox.BorderBrush = System.Windows.Media.Brushes.Red;
+                AmountTextBox.BorderThickness = new Thickness(2);
+
                 MessageBox.Show("Wprowadź poprawną kwotę.");
                 return;
+            }
+            else
+            {
+                AmountTextBox.ClearValue(TextBox.BorderBrushProperty);
+                AmountTextBox.ClearValue(TextBox.BorderThicknessProperty);
             }
 
             var selectedType = CategoryComboBox.SelectedItem as TransactionType;
@@ -432,5 +440,14 @@ namespace wpf_projekt
             }
         }
 
+        private void AmountTextBox_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
+        {
+            e.Handled = !char.IsDigit(e.Text, 0) && e.Text != "," && e.Text != ".";
+        }
+        private void AmountTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            AmountTextBox.ClearValue(TextBox.BorderBrushProperty);
+            AmountTextBox.ClearValue(TextBox.BorderThicknessProperty);
+        }
     }
 }

@@ -5,10 +5,24 @@
         Title="Zarządzanie Finansami" Height="600" Width="700"
         Background="#F3F4F6" WindowStartupLocation="CenterScreen">
 
+    <Window.Resources>
+
+        <!-- czerwone obramowanie przy błędzie -->
+        <Style TargetType="TextBox">
+            <Style.Triggers>
+                <Trigger Property="Validation.HasError" Value="True">
+                    <Setter Property="BorderBrush" Value="Red"/>
+                    <Setter Property="BorderThickness" Value="2"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+    </Window.Resources>
+
     <Grid Margin="20">
         <TabControl>
 
-            <!-- 🔵 DODAJ -->
+            <!-- DODAJ -->
             <TabItem Header="Dodaj">
                 <Border Background="White" Margin="10" Padding="20" CornerRadius="12">
                     <Border.Effect>
@@ -24,7 +38,9 @@
                                    HorizontalAlignment="Center"/>
 
                         <TextBlock Text="Kwota (zł):"/>
-                        <TextBox x:Name="AmountTextBox" Margin="0,0,0,10"/>
+                        <TextBox x:Name="AmountTextBox"
+                                 Margin="0,0,0,10"
+                                 PreviewTextInput="AmountTextBox_PreviewTextInput"/>
 
                         <TextBlock Text="Wybierz konto:"/>
                         <ComboBox x:Name="AccountComboBox"
@@ -131,12 +147,12 @@
                 </Border>
             </TabItem>
 
-            <!-- 🟢 TRANSAKCJE -->
+            <!-- TRANSAKCJE -->
             <TabItem Header="Transakcje">
                 <views:TransactionsView/>
             </TabItem>
 
-            <!-- 🟣 PODSUMOWANIE -->
+            <!-- PODSUMOWANIE -->
             <TabItem Header="Podsumowanie">
                 <views:SummaryView/>
             </TabItem>

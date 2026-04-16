@@ -55,7 +55,25 @@
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Data" Binding="{Binding Date, StringFormat={}{0:dd.MM.yyyy}}" Width="100" />
                 <DataGridTextColumn Header="Kategoria" Binding="{Binding TransactionType.Name}" Width="150" />
-                <DataGridTextColumn Header="Kwota" Binding="{Binding Amount}" Width="80" />
+                
+                <DataGridTextColumn Header="Kwota" Binding="{Binding Amount}" Width="80">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <!-- Przychód = zielony -->
+                                <DataTrigger Binding="{Binding IsPositive}" Value="True">
+                                    <Setter Property="Foreground" Value="Green"/>
+                                </DataTrigger>
+
+                                <!-- Wydatek = czerwony -->
+                                <DataTrigger Binding="{Binding IsPositive}" Value="False">
+                                    <Setter Property="Foreground" Value="Red"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                
                 <DataGridTextColumn Header="Typ" Binding="{Binding TypeName}" Width="80" />
                 <DataGridTextColumn Header="Opis" Binding="{Binding Description}" Width="*" />
             </DataGrid.Columns>
