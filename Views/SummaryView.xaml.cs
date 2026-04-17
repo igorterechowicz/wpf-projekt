@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-
+//komentarz
 namespace wpf_projekt.Views
 {
     public partial class SummaryView : UserControl
