@@ -11,14 +11,14 @@ namespace wpf_projekt.Services
 {
     public class CsvImportResult
     {
-        public List<Transaction> Imported    { get; init; } = new();
-        public List<string>      Errors      { get; init; } = new();
-        public int               Duplicates  { get; set; }
+        public List<Transaction> Imported { get; init; } = new();
+        public List<string> Errors { get; init; } = new();
+        public int Duplicates { get; set; }
     }
 
     public class CsvImportService
     {
-        // ── Odczyt pliku CSV → słowniki wierszy ─────────────────────────────────
+        //  Odczyt pliku CSV  słowniki wierszy 
 
         public static (string[] Headers, List<Dictionary<string, string>> Rows) ParseFile(string path)
         {
@@ -59,7 +59,7 @@ namespace wpf_projekt.Services
             return (headers, rows);
         }
 
-        // ── Konwersja wierszy → modele Transaction ───────────────────────────────
+        //  Konwersja wierszy  modele Transaction 
 
         public static CsvImportResult MapToTransactions(
             List<Dictionary<string, string>> rows,
@@ -69,15 +69,15 @@ namespace wpf_projekt.Services
             int? sharedAccountId,
             IEnumerable<Transaction> existingTransactions)
         {
-            var result    = new CsvImportResult();
-            var existing  = existingTransactions.ToList();
+            var result = new CsvImportResult();
+            var existing = existingTransactions.ToList();
             int rowNumber = 1;
 
             foreach (var row in rows)
             {
                 rowNumber++;
 
-                // ── Data ────────────────────────────────────────────────────────
+                //  Data 
                 if (!row.TryGetValue(profile.ColumnDate!, out var rawDate) ||
                     !TryParseDate(rawDate, profile.DateFormat, out DateTime date))
                 {
@@ -85,7 +85,7 @@ namespace wpf_projekt.Services
                     continue;
                 }
 
-                // ── Kwota ───────────────────────────────────────────────────────
+                //  Kwota 
                 if (!row.TryGetValue(profile.ColumnAmount!, out var rawAmount) ||
                     !TryParseAmount(rawAmount, out decimal amount))
                 {
@@ -93,24 +93,9 @@ namespace wpf_projekt.Services
                     continue;
                 }
 
-                bool isPositive;
-                if (profile.AmountSignDeterminesDirection)
-                {
-                    isPositive = amount >= 0;
-                    amount     = Math.Abs(amount);
-                }
-                else if (!string.IsNullOrWhiteSpace(profile.ColumnIsPositive) &&
-                         row.TryGetValue(profile.ColumnIsPositive, out var rawType))
-                {
-                    isPositive = rawType.Contains("przychód", StringComparison.OrdinalIgnoreCase) ||
-                                 rawType.Contains("wpływ",    StringComparison.OrdinalIgnoreCase) ||
-                                 rawType.Contains("+",        StringComparison.Ordinal);
-                }
-                else
-                {
-                    isPositive = amount >= 0;
-                    amount     = Math.Abs(amount);
-                }
+                // Kierunek transakcji zawsze wynika ze znaku kwoty
+                bool isPositive = amount >= 0;
+                amount = Math.Abs(amount);
 
                 if (amount == 0)
                 {
@@ -118,17 +103,17 @@ namespace wpf_projekt.Services
                     continue;
                 }
 
-                // ── Opis ────────────────────────────────────────────────────────
+                //  Opis 
                 string description = string.Empty;
                 if (!string.IsNullOrWhiteSpace(profile.ColumnDescription) &&
                     row.TryGetValue(profile.ColumnDescription, out var rawDesc))
                     description = rawDesc.Trim();
 
-                // ── Deduplikacja ────────────────────────────────────────────────
+                //  Deduplikacja 
                 bool isDuplicate = existing.Any(t =>
-                    t.Date.Date   == date.Date &&
-                    t.Amount      == amount    &&
-                    t.IsPositive  == isPositive &&
+                    t.Date.Date == date.Date &&
+                    t.Amount == amount &&
+                    t.IsPositive == isPositive &&
                     t.Description == description);
 
                 if (isDuplicate)
@@ -137,16 +122,16 @@ namespace wpf_projekt.Services
                     continue;
                 }
 
-                // ── Budowanie modelu ────────────────────────────────────────────
+                //  Budowanie modelu 
                 var tx = new Transaction
                 {
-                    Amount            = amount,
-                    IsPositive        = isPositive,
-                    Date              = date,
-                    Description       = description,
+                    Amount = amount,
+                    IsPositive = isPositive,
+                    Date = date,
+                    Description = description,
                     TransactionTypeId = category.Id,
                     PersonalAccountId = personalAccountId,
-                    SharedAccountId   = sharedAccountId
+                    SharedAccountId = sharedAccountId
                 };
 
                 result.Imported.Add(tx);
@@ -155,7 +140,7 @@ namespace wpf_projekt.Services
             return result;
         }
 
-        // ── Zapis / odczyt profilu mapowania ────────────────────────────────────
+        //  Zapis i odczyt profilu mapowania 
 
         private static readonly string ProfilesDir =
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -185,7 +170,7 @@ namespace wpf_projekt.Services
             return list;
         }
 
-        // ── Helpery ─────────────────────────────────────────────────────────────
+        //  Helpery 
 
         private static bool TryParseDate(string? raw, string format, out DateTime result)
         {
@@ -207,11 +192,11 @@ namespace wpf_projekt.Services
 
             // Normalizuj: usuń spacje, zamień przecinek dziesiętny na kropkę
             string normalized = raw.Trim()
-                                   .Replace("\u00a0", "")   // nbsp
+                                   .Replace("\u00a0", "")   // nbsp, ai to dodał
                                    .Replace(" ", "");
 
             // Jeśli jest i przecinek i kropka, ten ostatni jest separatorem dziesiętnym
-            bool hasDot   = normalized.Contains('.');
+            bool hasDot = normalized.Contains('.');
             bool hasComma = normalized.Contains(',');
 
             if (hasDot && hasComma)
@@ -235,7 +220,7 @@ namespace wpf_projekt.Services
         {
             var fields = new List<string>();
             bool inQuotes = false;
-            var  current  = new System.Text.StringBuilder();
+            var current = new System.Text.StringBuilder();
 
             foreach (char c in line)
             {

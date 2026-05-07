@@ -20,16 +20,16 @@ namespace wpf_projekt.ViewModels
         private readonly ICategoryRepository _categoryRepository;
         private readonly AppDbContext _context;
 
-        // ── Sub-ViewModels ────────────────────────────────────────────────────────
+        //  Sub-ViewModels 
         public TransactionsViewModel TransactionsVm { get; }
         public SummaryViewModel SummaryVm { get; }
 
-        // ── Kolekcje ─────────────────────────────────────────────────────────────
+        //  Kolekcje 
         public ObservableCollection<Transaction> Transactions { get; } = new();
         public ObservableCollection<AccountListItem> Accounts { get; } = new();
         public ObservableCollection<TransactionType> Categories { get; } = new();
 
-        // ── Właściwości bindowane — formularz transakcji (WALIDOWANE) ───────────
+        //  Właściwości bindowane — formularz transakcji (WALIDOWANE) 
 
         private string _amountText = string.Empty;
         public string AmountText
@@ -45,17 +45,17 @@ namespace wpf_projekt.ViewModels
         [ObservableProperty] private bool _isIncome = false;
         [ObservableProperty] private bool _isExpense = true;
 
-        // ── Właściwości bindowane — formularz konta ──────────────────────────────
+        //  Właściwości bindowane — formularz konta 
         [ObservableProperty] private string _newAccountName = string.Empty;
         [ObservableProperty] private string _newAccountType = "Osobiste";
 
-        // ── Właściwości bindowane — formularz transferu ──────────────────────────
+        //  Właściwości bindowane — formularz transferu 
         [ObservableProperty] private AccountListItem? _transferFrom;
         [ObservableProperty] private AccountListItem? _transferTo;
         [ObservableProperty] private string _transferAmountText = string.Empty;
         [ObservableProperty] private string _transferDescription = string.Empty;
 
-        // ── Konstruktor ───────────────────────────────────────────────────────────
+        //  Konstruktor 
         public MainViewModel(
             AppDbContext context,
             IAccountRepository accountRepository,
@@ -67,11 +67,11 @@ namespace wpf_projekt.ViewModels
             _transactionRepository = transactionRepository;
             _categoryRepository = categoryRepository;
 
-            TransactionsVm = new TransactionsViewModel(this, transactionRepository, categoryRepository);
+            TransactionsVm = new TransactionsViewModel(this, transactionRepository, categoryRepository, accountRepository);
             SummaryVm = new SummaryViewModel(this);
         }
 
-        // ── Inicjalizacja ─────────────────────────────────────────────────────────
+        //  Inicjalizacja 
         public async Task InitializeAsync()
         {
             await _context.Database.EnsureCreatedAsync();
@@ -115,7 +115,7 @@ namespace wpf_projekt.ViewModels
             foreach (var t in dbTransactions) Transactions.Add(t);
         }
 
-        // ── Komendy ───────────────────────────────────────────────────────────────
+        //  Komendy 
 
         [RelayCommand]
         private async Task SaveTransactionAsync()
@@ -307,7 +307,7 @@ namespace wpf_projekt.ViewModels
                 await LoadDataAsync();
         }
 
-        // ── Metody pomocnicze ─────────────────────────────────────────────────────
+        //  Metody pomocnicze 
         private void ClearTransactionForm()
         {
             AmountText = string.Empty;

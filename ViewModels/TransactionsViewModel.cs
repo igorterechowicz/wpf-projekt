@@ -29,17 +29,18 @@ namespace wpf_projekt.ViewModels
         private readonly MainViewModel _mainVm;
         private readonly ITransactionRepository _transactionRepository;
         private readonly ICategoryRepository _categoryRepository;
+        private readonly IAccountRepository _accountRepository;
 
 
-        // ── Kolekcje filtrów ─────────────────────────────────────────────────────
+        //  Kolekcje filtrów 
         public ObservableCollection<string> AvailableYears { get; } = new();
         public ObservableCollection<MonthItem> AvailableMonths { get; } = new();
         public ObservableCollection<string> AvailableCategories { get; } = new();
 
-        // ── Wynik filtrowania ────────────────────────────────────────────────────
+        //  Wynik filtrowania 
         [ObservableProperty] private List<Transaction> _filteredTransactions = new();
 
-        // ── Filtry ───────────────────────────────────────────────────────────────
+        //  Filtry 
         [ObservableProperty] private string _selectedYear = "Wszystkie";
         [ObservableProperty] private MonthItem? _selectedMonth;
         [ObservableProperty] private string _selectedCategory = "Wszystkie";
@@ -48,15 +49,17 @@ namespace wpf_projekt.ViewModels
 
         public TransactionsViewModel(MainViewModel mainVm,
         ITransactionRepository transactionRepository,
-        ICategoryRepository categoryRepository)
+        ICategoryRepository categoryRepository,
+        IAccountRepository accountRepository)
         {
             _mainVm = mainVm;
             _transactionRepository = transactionRepository;
             _categoryRepository = categoryRepository;
+            _accountRepository = accountRepository;
             _mainVm.Transactions.CollectionChanged += (_, _) => Refresh();
         }
 
-        // ── Wywołane przez widok po załadowaniu ──────────────────────────────────
+        //  Wywołane przez widok po załadowaniu 
         public void Load()
         {
             BuildFilters();
@@ -132,7 +135,7 @@ namespace wpf_projekt.ViewModels
             Apply();
         }
 
-        // ── Eksport CSV ──────────────────────────────────────────────────────────
+        //  Eksport CSV 
         [RelayCommand]
         private void ExportToCsv()
         {
@@ -212,6 +215,7 @@ namespace wpf_projekt.ViewModels
                     headers, rows,
                     _transactionRepository,
                     _categoryRepository,
+                    _accountRepository,
                     _mainVm);
 
                 var mappingWindow = new wpf_projekt.Views.CsvMappingWindow(mappingVm)
@@ -233,7 +237,7 @@ namespace wpf_projekt.ViewModels
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-        /// <summary>Pomocniczy rekord reprezentujący miesiąc w filtrze.</summary>
+        //Pomocniczy rekord reprezentujący miesiąc w filtrze
         public record MonthItem(int? Number, string Label)
         {
             public override string ToString() => Label;
